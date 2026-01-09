@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::domain::combat_context::action::{EffectType};
 use crate::domain::setting::{AppSetting};
+use crate::domain::types::data::DynamicValue;
+use crate::domain::types::fixed::Fixed;
 use crate::domain::types::id::SkillID;
 use crate::domain::types::tick::{Tick, TimeMs};
 use crate::domain::types::trigger::TriggerCondition;
@@ -25,7 +27,7 @@ pub struct SkillConfig {
     // 可选信息
     pub stagger: Option<f64>,
     //// 基础攻击 —— 重击可滑动区间，自然重击点在stamp_backswing_ms，小于此需要闪避打断前几段后摇
-    pub next_attack_window_ms: Option<(Tick, Tick, Tick)>,// 下一段攻击窗口(min, max)
+    pub next_attack_window_ms: Option<AttackWindow<Tick>>,// 下一段攻击窗口(min, max)
     pub final_attack_sp: Option<f64>,
     //// 战技 —— 耗费sp100
 
@@ -41,7 +43,7 @@ pub struct SkillConfig {
     // 其他：连携技、终结技冻结时间每个角色相同，由全局变量AppSetting确定
 
     // 各等级参数
-    pub params: Vec<Vec<f64>>,
+    pub params: Vec<Vec<Fixed>>,
 }
 
 // 用来存放json文件，ms需要映射为tick
@@ -65,7 +67,7 @@ pub struct SkillConfigData {
     // 可选信息
     pub stagger: Option<f64>,
     //// 基础攻击 —— 重击可滑动区间，自然重击点在stamp_backswing_ms，小于此需要闪避打断前几段后摇
-    pub next_attack_window_ms: Option<(TimeMs, TimeMs, TimeMs)>,// 下一段攻击窗口(min, max)
+    pub next_attack_window_ms: Option<AttackWindow<TimeMs>>,// 下一段攻击窗口(min, default, max)
     pub final_attack_sp: Option<f64>,
     //// 战技 —— 耗费sp100
 
@@ -98,20 +100,27 @@ pub enum SkillType {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SkillEventMs {
     pub offset_ms: TimeMs,
-    pub effect: EffectType<TimeMs>,
+    pub effect: EffectType<TimeMs, DynamicValue<f64>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SkillEvent {
     pub offset_tick: Tick,
-    pub effect: EffectType<Tick>,
+    pub effect: EffectType<Tick, DynamicValue<Fixed>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct AttackWindow<T> {
+    pub start: T,
+    pub end: T,
+    pub default: T, // 默认点位
 }
 
 impl SkillEventMs {
     pub fn into_tick(self, setting: &AppSetting) -> SkillEvent {
         SkillEvent {
             offset_tick: self.offset_ms.to_tick(setting),
-            effect: self.effect.into_tick(setting),
+            effect: self.effect.convert(setting),
         }
     }
 }
@@ -165,11 +174,19 @@ impl SkillConfigData {
             stagger: self.stagger.map(|s| s),
             next_attack_window_ms: self
                 .next_attack_window_ms
-                .map(|ms| (ms.0.to_tick(setting), ms.1.to_tick(setting), ms.2.to_tick(setting))),
+                .map(|ms| AttackWindow { 
+                    start: ms.start.to_tick(setting), 
+                    end: ms.end.to_tick(setting), 
+                    default: ms.default.to_tick(setting) 
+                }),
             final_attack_sp: self.final_attack_sp.map(|s| s),
             trigger_conditions: self.trigger_conditions.map(|tc| tc),
             combo_cd_tick: self.combo_cd_ms.map(|ms| ms.to_tick(setting)),
-            params: self.params,
+            params: self.params.iter()
+                .map(|v| v.iter()
+                    .map(|f| Fixed::from_float(*f))
+                    .collect())
+                .collect(),
         }
     }
 }

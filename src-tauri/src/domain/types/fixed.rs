@@ -22,10 +22,11 @@ impl Fixed {
         (self.0 as f64) / (SCALE as f64)
     }
     pub fn mul(&self, rhs: Self) -> Self {
-        Self(self.0 * rhs.0 / SCALE)
+        let val = (self.0 as i128 * rhs.0 as i128) / (SCALE as i128);
+        Self(val as i64)
     }
     pub fn mul_f64(&self, rhs: f64) -> Self {
-        let rate = Fixed((rhs * (SCALE as f64)).round() as i64);
-        Self(self.0 * rate.0 / SCALE)
+        let rhs_fixed = Self::from_float(rhs);
+        self.mul(rhs_fixed)
     }
 }

@@ -11,7 +11,9 @@ pub struct OperatorInstance {
     pub uid: InstanceID,     // 唯一实例id
     pub oper_id: OperatorID, // 干员id：oper_surtr
     pub slot_index: SlotIndex,
-    pub config: Arc<OperatorConfig>, // 干员配置
+
+    #[serde(skip)]
+    pub config: Option<Arc<OperatorConfig>>, // 干员配置
 
     // 装备
     pub weapon: Option<WeaponInstance>,       // 武器

@@ -38,7 +38,7 @@ pub enum TriggerCondition {
 
     // 状态（我方）
     CheckHp {
-        compare_type: String,
+        compare_type: CompareOp,
         value: i64,
     }, // 检测血量less/more, 百分比
     GetActiveStatus(BuffID),     // 施加状态（友方）
@@ -53,4 +53,13 @@ pub enum TriggerCondition {
 
     And(Vec<TriggerCondition>),
     Or(Vec<TriggerCondition>),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub enum CompareOp {
+    Gt, // >
+    Lt, // <
+    Gte, // >=
+    Lte, // <=
 }

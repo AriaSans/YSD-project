@@ -70,8 +70,8 @@ pub enum AffixTier {
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum DynamicValue {
-    Fix(f64),             // 固定数
+pub enum DynamicValue<V = Fixed> {
+    Fix(V),             // 固定数
     Ref { param: usize }, // Vec<>中的第几个参数
 }
 
@@ -112,8 +112,17 @@ impl InflictionStacks {
     }
 }
 
-impl DynamicValue {
-    pub fn resolve(&self, skill_level: u8, config: &SkillConfig) -> f64 {
+impl DynamicValue<f64> {
+    pub fn into_fixed(self) -> DynamicValue<Fixed> {
+        match self {
+            DynamicValue::Fix(val) => DynamicValue::Fix(Fixed::from_float(val)),
+            DynamicValue::Ref { param } => DynamicValue::Ref { param },
+        }
+    }    
+}
+
+impl DynamicValue<Fixed> {
+    pub fn resolve(&self, skill_level: u8, config: &SkillConfig) -> Fixed {
         match self {
             DynamicValue::Fix(val) => *val,
             DynamicValue::Ref { param } => {
@@ -125,7 +134,7 @@ impl DynamicValue {
                     .get(level_index)
                     .and_then(|level_params| level_params.get(*param))
                     .copied() // 解引用
-                    .unwrap_or(0.0)
+                    .unwrap_or(Fixed::from_float(0.0))
             }
         }
     }
