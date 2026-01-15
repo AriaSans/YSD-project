@@ -4,27 +4,29 @@ use crate::domain::gamedb::skills::SkillConfig;
 use crate::domain::setting::AppSetting;
 
 use super::fixed::Fixed;
+use super::id::SlotIndex;
 use super::tick::{ExpireTick, Tick};
 
 // sp技力,x1000存储(Fixed)
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct SpState {
-    pub base_value: Fixed,
-    pub last_update_tick: Tick,
+    pub value: Fixed,
+    // pub max: Fixed
+    // pub last_update_tick: Tick,
 }
 
 // 能量,x1000存储(Fixed)
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Energy {
     pub value: Fixed,
-    pub max: Fixed,
+    // pub max: Fixed,
 }
 
 // 失衡值,x1000存储(Fixed)
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Stagger {
     pub value: Fixed,
-    pub max: Fixed,
+    // pub max: Fixed,
 }
 
 // 异常层数
@@ -76,7 +78,6 @@ pub enum DynamicValue<V = Fixed> {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
 pub enum StatType {
     Atk,              // 攻击力
     Hp,               // 血量
@@ -89,13 +90,28 @@ pub enum StatType {
     ComboCDReduction, // 连携技冷却时间缩减
 }
 
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum TargetSelector {
+    // === 绝对目标 ===
+    ForSelf,    // 自己
+    AllAlly, // 全体友方（包括自己）
+    AllAllyExcludeSelf, // 全体友方（不包自己）
+    SpecificSlot(SlotIndex), // 指定槽位（较少用）
+
+    // === 动态目标 ===
+    LowestHpRatio, // 最低生命
+    HighestAtk, // 最高攻击
+
+    // === 敌人目标（暂只有一位） ===
+}
+
 impl SpState {
     // 取当前tick的sp值，结果为x1000的Fixed
-    pub fn current_value(&self, current_tick: Tick, setting: &AppSetting) -> Fixed {
-        let rate = Fixed::from_float(setting.get_sp_per_tick());
-        let passed = Fixed::from_int(current_tick.0 - self.last_update_tick.0);
-        passed.mul(rate)
-    }
+    // pub fn current_value(&self, current_tick: Tick, setting: &AppSetting) -> Fixed {
+    //     let rate = Fixed::from_float(setting.get_sp_per_tick());
+    //     let passed = Fixed::from_int(current_tick.0 - self.last_update_tick.0);
+    //     passed.mul(rate)
+    // }
 }
 
 impl InflictionStacks {

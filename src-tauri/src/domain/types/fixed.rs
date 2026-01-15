@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 const SCALE: i64 = 1000;
 // 倍数存储计算
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Fixed(pub i64);
 
 impl Fixed {
@@ -21,6 +21,13 @@ impl Fixed {
     pub fn to_float(self) -> f64{
         (self.0 as f64) / (SCALE as f64)
     }
+
+    // 加法
+    pub fn add(&self, rhs: Fixed) -> Self {
+        Fixed(self.0 + rhs.0)
+    }
+
+    // 乘法
     pub fn mul(&self, rhs: Self) -> Self {
         let val = (self.0 as i128 * rhs.0 as i128) / (SCALE as i128);
         Self(val as i64)
